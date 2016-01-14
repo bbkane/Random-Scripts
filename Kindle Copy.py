@@ -15,11 +15,14 @@ while True:
     if new_clipboard_content != clipboard_content and 'Kindle Edition' in new_clipboard_content:
         clipboard_content = new_clipboard_content
         clipboard_content = clipboard_content.replace('\r','')
-        split = clipboard_content.find('\n\n')
-        quote = clipboard_content[:split]
-        source = clipboard_content[split:].strip()
-        page_num = re.findall(r'\(p. \d+\)', source)[0]
-        pyperclip.copy(quote + ' ' + page_num)
+        try:
+            split = clipboard_content.find('\n\n')
+            quote = clipboard_content[:split]
+            source = clipboard_content[split:].strip()
+            page_num = re.findall(r'\(p+\. .*\)', source)[0]
+            pyperclip.copy(quote + ' ' + page_num)
+        except Exception as e:
+            print(str(e), clipboard_content)
     time.sleep(.5)
 
 #print(quote)
