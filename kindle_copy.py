@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan 14 10:47:34 2016
@@ -18,6 +19,7 @@ while True:
         try:
             split = clipboard_content.find('\n\n')
             quote = clipboard_content[:split]
+            quote = re.sub(r'\s+', ' ', quote)
             source = clipboard_content[split:].strip()
             page_num = re.findall(r'\(p+\. .*\)', source)[0]
             pyperclip.copy(quote + ' ' + page_num)
