@@ -10,23 +10,21 @@ import time
 import pyperclip
 import re
 
+print("Starting Kindle Copy! Press Ctrl-C to stop")
 clipboard_content = pyperclip.paste()
 while True:
     new_clipboard_content = pyperclip.paste()
-    if new_clipboard_content != clipboard_content and 'Kindle Edition' in new_clipboard_content:
+    if (new_clipboard_content != clipboard_content and
+            'Kindle Edition' in new_clipboard_content):
         clipboard_content = new_clipboard_content
-        clipboard_content = clipboard_content.replace('\r','')
+        clipboard_content = clipboard_content.replace('\r', '')
         try:
-            split = clipboard_content.find('\n\n')
-            quote = clipboard_content[:split]
+            quote, source = clipboard_content.partition('\n\n')[::2]
+            # remove all extraneous whitespace formatting
             quote = re.sub(r'\s+', ' ', quote)
-            source = clipboard_content[split:].strip()
+            source = source.strip()
             page_num = re.findall(r'\(p+\. .*\)', source)[0]
             pyperclip.copy(quote + ' ' + page_num)
         except Exception as e:
             print(str(e), clipboard_content)
-    time.sleep(.5)
-
-#print(quote)
-#print('==='
-#print(page_num)
+    time.sleep(1)
