@@ -15,10 +15,6 @@ class PriorityQueue:
         def __init__(self, item, cost):
             self.item = item
             self.cost = cost
-
-        def __iter__(self):
-            yield self.item
-            yield self.cost
         
         def __repr__(self):
             return 'Element(item=%r, cost=%r)' % (self.item, self.cost)
@@ -51,6 +47,7 @@ class NoPathException(Exception):
     pass
 
 class Graph:
+    
     def __init__(self):
         self.nodes = set()
         self.edges = set()
@@ -74,8 +71,8 @@ class Graph:
         while True:
             if not frontier:
                 raise NoPathException(str(start))
-            node, node_cost = frontier.pop()
-            if node == end: # We're done. Get the path and return
+            current_node = frontier.pop()
+            if current_node.item == end: # We're done. Get the path and return
                 path = []
                 current = end
                 while parents[current]:
@@ -84,19 +81,20 @@ class Graph:
                 path.append(current)
                 path.reverse()
                 return path
-            explored.add(node)
-            node_edges = {e for e in self.edges if e.start == node}
+            explored.add(current_node.item)
+            node_edges = {e for e in self.edges if e.start == current_node.item}
             for neighbor in node_edges:
+                total_neighbor_cost = neighbor.cost + current_node.cost
                 if neighbor.finish not in explored:
                     for element in frontier:
                         if element.item == neighbor.finish:
-                            if element.cost > neighbor.cost + node_cost:
-                                element.cost = neighbor.cost + node_cost
-                                parents[element.item] = node
+                            if element.cost > total_neighbor_cost:
+                                element.cost = total_neighbor_cost
+                                parents[element.item] = current_node.item
                             break
                     else: # no break (the item wasn't in the frontier)
-                        frontier.push(neighbor.finish, neighbor.cost + node_cost)
-                        parents[neighbor.finish] = node
+                        frontier.push(neighbor.finish, total_neighbor_cost)
+                        parents[neighbor.finish] = current_node.item
                         
 
 def main():
@@ -114,7 +112,7 @@ def main():
     
     print(g)
     
-    print(g.dijkstra('1', '4'))
+    print(g.dijkstra('1', '5'))
     
 
 if __name__ == '__main__':
