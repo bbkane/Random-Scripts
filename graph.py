@@ -75,8 +75,7 @@ class Graph:
             if not frontier:
                 raise NoPathException(str(start))
             node, node_cost = frontier.pop()
-            print('current node:', node)
-            if node == end:
+            if node == end: # We're done. Get the path and return
                 path = []
                 current = end
                 while parents[current]:
@@ -88,7 +87,6 @@ class Graph:
             explored.add(node)
             node_edges = {e for e in self.edges if e.start == node}
             for neighbor in node_edges:
-                print('neighbor:', neighbor.finish)
                 if neighbor.finish not in explored:
                     for element in frontier:
                         if element.item == neighbor.finish:
@@ -101,19 +99,23 @@ class Graph:
                         parents[neighbor.finish] = node
                         
 
-g = Graph()
+def main():
+    g = Graph()
+    
+    g.add_two_way('1', '2', 7)
+    g.add_two_way('1', '3', 9)
+    g.add_two_way('1', '6', 14)
+    g.add_two_way('2', '3', 10)
+    g.add_two_way('2', '4', 15)
+    g.add_two_way('3', '4', 11)
+    g.add_two_way('3', '6', 2)
+    g.add_two_way('4', '5', 6)
+    g.add_two_way('5', '6', 9)
+    
+    print(g)
+    
+    print(g.dijkstra('1', '4'))
+    
 
-g.add_two_way('1', '2', 7)
-g.add_two_way('1', '3', 9)
-g.add_two_way('1', '6', 14)
-g.add_two_way('2', '3', 10)
-g.add_two_way('2', '4', 15)
-g.add_two_way('3', '4', 11)
-g.add_two_way('3', '6', 2)
-g.add_two_way('4', '5', 6)
-g.add_two_way('5', '6', 9)
-
-print(g)
-
-print(g.dijkstra('1', '5'))
-
+if __name__ == '__main__':
+    main()
