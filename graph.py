@@ -9,39 +9,15 @@ Created on Mon Jul 11 21:32:46 2016
 
 from collections import namedtuple
 
-class PriorityQueue:
-
-    class Element:
-        def __init__(self, item, cost):
-            self.item = item
-            self.cost = cost
-        
-        def __repr__(self):
-            return 'Element(item=%r, cost=%r)' % (self.item, self.cost)
-    
-    def __init__(self):
-        self._list = []
-
-    def push(self, item, cost):
-        self._list.append(type(self).Element(item, cost))
-        self._list.sort(key = lambda e: e.cost)
-
-    def pop(self):
-        return self._list.pop(0)
-    
-    def __iter__(self):
-        yield from (e for e in self._list)
-        self._list.sort(key= lambda e: e.cost)
-        
-    def __bool__(self):
-        return bool(self._list)
-        
-    def __str__(self):
-        return '[' + '\n'.join(str(e) for e in self._list) + ']'
-
-
 Edge = namedtuple('Edge', ['start', 'finish', 'cost'])
 
+class Element:
+    def __init__(self, item, cost):
+        self.item = item
+        self.cost = cost
+    
+    def __repr__(self):
+        return 'Element(item=%r, cost=%r)' % (self.item, self.cost)
 
 class NoPathException(Exception):
     pass
@@ -65,13 +41,16 @@ class Graph:
 
     def dijkstra(self, start, end):
         explored = set()
-        frontier = PriorityQueue()
-        frontier.push(start, 0)
+        frontier = []
+        frontier.append(Element(start, 0))
         parents = {start: None}
         while True:
             if not frontier:
                 raise NoPathException(str(start))
-            current_node = frontier.pop()
+            # treat the list like a priority queue by sorting it by cost
+            # and popping the first element
+            frontier.sort(key = lambda e: e.cost)
+            current_node = frontier.pop(0)
             if current_node.item == end: # We're done. Get the path and return
                 path = []
                 current = end
@@ -93,7 +72,7 @@ class Graph:
                                 parents[element.item] = current_node.item
                             break
                     else: # no break (the item wasn't in the frontier)
-                        frontier.push(neighbor.finish, total_neighbor_cost)
+                        frontier.append(Element(neighbor.finish, total_neighbor_cost))
                         parents[neighbor.finish] = current_node.item
                         
 
