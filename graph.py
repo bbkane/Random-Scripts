@@ -43,26 +43,9 @@ class PriorityQueue:
     def __str__(self):
         return '[' + '\n'.join(str(e) for e in self._list) + ']'
 
+
 Edge = namedtuple('Edge', ['start', 'finish', 'cost'])
 
-class Edge1:
-    def __init__(self, start, finish, cost):
-        self.start = start
-        self.finish = finish
-        self.cost = cost
-
-    def __hash__(self):
-        return(hash((self.start, self.finish, self.cost)))
-
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return False
-        return self.start == other.start and \
-            self.finish == other.finish and self.cost == other.cost
-    
-    def __repr__(self):
-        return 'Edge(start=%r, finish=%r, cost=%r)' % \
-            (self.start, self.finish, self.cost)
 
 class NoPathException(Exception):
     pass
@@ -94,52 +77,29 @@ class Graph:
             node, node_cost = frontier.pop()
             print('current node:', node)
             if node == end:
+                path = []
                 current = end
                 while parents[current]:
-                    print(current)
+                    path.append(current)
                     current = parents[current]
-                print(current)
-                return
+                path.append(current)
+                path.reverse()
+                return path
             explored.add(node)
             node_edges = {e for e in self.edges if e.start == node}
             for neighbor in node_edges:
                 print('neighbor:', neighbor.finish)
                 if neighbor.finish not in explored:
-                    in_frontier = False
                     for element in frontier:
                         if element.item == neighbor.finish:
                             if element.cost > neighbor.cost + node_cost:
                                 element.cost = neighbor.cost + node_cost
                                 parents[element.item] = node
-                            in_frontier = True
-                    if not in_frontier:
+                            break
+                    else: # no break (the item wasn't in the frontier)
                         frontier.push(neighbor.finish, neighbor.cost + node_cost)
                         parents[neighbor.finish] = node
                         
-# # start djikstra
-# explored = set()
-# frontier = []
-# start_node = Node(parent=None, cost=0)
-# frontier.append(start_node)
-# while True:
-#     if not frontier:
-#         return None
-#     sorted(frontier, key=n.cost)
-#     node = frontier.pop()
-#     if is_goal(node):
-#         return True
-#     explored.add(node)
-#     for neighbor in neighbors(node):
-#         if neighbor not in explored:
-#             if neighbor not in frontier:
-#                 neighbor.parent = node
-#                 neighbor.cost = node.cost + cost_from(node, neighbor)
-#                 frontier.append(neighbor)
-#             else:
-#                 neighbor_in_frontier = get_from_frontier(node)
-#                 if neighbor.cost < neighbor_in_frontier.cost:
-#                     neighbor_in_frontier.cost = neighbor.cost
-#                     neighbor_in_frontier.parent = neighbor.parent
 
 g = Graph()
 
