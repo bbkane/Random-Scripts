@@ -4,24 +4,47 @@ import argparse
 import datetime
 import json
 import os
-import pprint
 import sys
 
+
 DESCRIPTION = """\
-Print file stats (similar to `stat`) for all
-directories and files under a folder.
-Useful for diffs before and after an action
-"""
+Print file stats (similar to `stat`) for all directories and files under a
+folder in a JSON format.  Useful for diffs before and after an action. Somewhat
+surprisingly, it's fast enough to use from the root directory without being
+annoying.
+
+Outputs:
+- launch_datetime
+- comment (optional)
+- top_dir (always absolute path)
+- file_stats (can have relative paths)
+
+NOTE: there will usually be a couple of "FileNotFound" errors. These are the
+result of files disappearing between finding them and statting them. As long as
+they are files you don't care about, this is fine.
+
+Example:
+
+    {exe} -c 'About to install blah' / > ~/before_blah.json
+    curl install.blah.io | bash  # or some install process
+    {exe} -c 'After installing blah' / > ~/after_blah.json
+    vimdiff ~/before_blah.json ~/after_blah.json
+""".format(exe=sys.argv[0])
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(DESCRIPTION)
+    parser = argparse.ArgumentParser(description=DESCRIPTION,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-c', '--comment',
+                        help="Comment for the output file")
     parser.add_argument('topdir', help="directory to start at")
     return parser.parse_args()
 
 
 def main():
-    topdir = parse_args().topdir
+    args = parse_args()
+    comment = args.comment
+    topdir = args.topdir
     topdir = os.path.expanduser(topdir)
     topdir = os.path.expandvars(topdir)
     infos = []
@@ -53,9 +76,10 @@ def main():
         info['st_ctime'] = stat_info.st_ctime
         results.append(info)
 
-    answer = dict(top_dir=topdir,
-                  launch_time=datetime.datetime.now().isoformat(),
-                  results=results)
+    answer = dict(top_dir=os.path.realpath(topdir),
+                  comment=comment,
+                  launch_datetime=datetime.datetime.now().isoformat(),
+                  file_stats=results)
     print(json.dumps(answer, sort_keys=True, indent=2))
 
 
