@@ -18,7 +18,12 @@ including lines like the above interspersed in text files
 
 Examples:
     {sys.argv[0]} text.txt
+
     {sys.argv[0]} < text.txt
+
+    cat <<EOF | {sys.argv[0]}
+    ;; Ben , 1
+    EOF
 
 Help:
 Please see Benjamin Kane for help.
@@ -41,7 +46,6 @@ def parse_args(*args, **kwargs):
         default=sys.stdin,
         help='Use a file or stdin'
     )
-
     parser.add_argument(
         '--marker',
         '-m',
@@ -111,9 +115,11 @@ def test_match_lines():
 
 def main():
     args = parse_args()
+
     if args.testing:
         test_match_lines()
         return
+
     numbers = []
     for line in args.infile:
         d = match_line(line, args.marker)
@@ -121,10 +127,14 @@ def main():
             if args.verbose:
                 print(d)
             numbers.append(float(d['amount']))
-    print(f'Sum:  {sum(numbers)}')
-    print(f'Mean: {statistics.mean(numbers)}')
-    print(f'Min:  {min(numbers)}')
-    print(f'Max:  {max(numbers)}')
+
+    if numbers:
+        print(f'Sum:  {sum(numbers)}')
+        print(f'Mean: {statistics.mean(numbers)}')
+        print(f'Min:  {min(numbers)}')
+        print(f'Max:  {max(numbers)}')
+    else:
+        print(f'No number lines found')
 
 
 if __name__ == "__main__":
