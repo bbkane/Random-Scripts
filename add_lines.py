@@ -53,6 +53,12 @@ def parse_args(*args, **kwargs):
         help='Marker at front of line to mark line to count. Defaults to ;;'
     )
     parser.add_argument(
+        '--separator',
+        '-s',
+        default=',',
+        help='Separator between name and amount. Defaults to ,'
+    )
+    parser.add_argument(
         '--verbose',
         '-v',
         action='store_true',
@@ -68,12 +74,12 @@ def parse_args(*args, **kwargs):
     return parser.parse_args(*args, **kwargs)
 
 
-def match_line(line, marker):
+def match_line(line, marker, sep):
     pattern = re.compile(
         f"^{marker}" + r"""\s+
         (?P<name>\w+)
         \s*
-        ,
+        """ + re.escape(sep) + r"""
         \s*
         (?P<amount>
             [+-]?             # optional signe
@@ -94,7 +100,7 @@ def match_line(line, marker):
     return None
 
 
-def test_match_lines():
+def test_match_lines(marker, separator):
     """Poor man's in-file pytest"""
     lines = dedent("""
     ;; A , 1
@@ -103,13 +109,14 @@ def test_match_lines():
     ;; D, 1
     ;; E ,1
     ;; F ,-1
+    ;; t , 10 # bob
     """).strip()
 
-    for line in lines.split('\n'):
+    for i, line in enumerate(lines.split('\n')):
         line += '\n'
-        print(f'Testing: {repr(line)}')
-        d = match_line(line, ';;')
-        print(f'Result: {repr(d)}')
+        print(f'{i}: Testing: {repr(line)}')
+        d = match_line(line, ';;', ',')
+        print(f'{i}: Result: {repr(d)}')
         print()
 
 
@@ -117,15 +124,15 @@ def main():
     args = parse_args()
 
     if args.testing:
-        test_match_lines()
+        test_match_lines(args.marker, args.separator)
         return
 
     numbers = []
-    for line in args.infile:
-        d = match_line(line, args.marker)
+    for i, line in enumerate(args.infile):
+        d = match_line(line, args.marker, args.separator)
         if d:
             if args.verbose:
-                print(d)
+                print(f'line: {i}: {d}')
             numbers.append(float(d['amount']))
 
     if numbers:
