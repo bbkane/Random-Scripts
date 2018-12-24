@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from operator import itemgetter
 from textwrap import dedent
 import argparse
 import re
@@ -10,13 +11,17 @@ import sys
 __author__ = "Benjamin Kane"
 __version__ = "0.1.0"
 __doc__ = f"""
-Count lines like: <marker> <name> , <amount>  # optional comment
-By default <marker> is ;;
+This script parses a text file to gather simple stats on lines. It's useful
+for interspersing budget itmes in notes.
 
-The intent for this script is to be able to calculate simple stats on notes by
-including lines like the above interspersed in text files
+Count lines like: <marker> <name> <separator> <amount>  # optional comment
+By default <marker> is ;; and <separator> is ,
 
-Examples:
+Example line:
+    ;; BankAccount , 9999999999  # got dat money
+
+
+Examples BASH usage:
     {sys.argv[0]} text.txt
 
     {sys.argv[0]} < text.txt
@@ -25,7 +30,6 @@ Examples:
     ;; Ben , 1
     EOF
 
-Help:
 Please see Benjamin Kane for help.
 Code at https://github.com/bbkane/Random-Scripts/tree/master
 """
@@ -115,7 +119,7 @@ def test_match_lines(marker, separator):
     for i, line in enumerate(lines.split('\n')):
         line += '\n'
         print(f'{i}: Testing: {repr(line)}')
-        d = match_line(line, ';;', ',')
+        d = match_line(line, marker, separator)
         print(f'{i}: Result: {repr(d)}')
         print()
 
@@ -127,19 +131,29 @@ def main():
         test_match_lines(args.marker, args.separator)
         return
 
-    numbers = []
+    items = []
     for i, line in enumerate(args.infile):
         d = match_line(line, args.marker, args.separator)
         if d:
             if args.verbose:
                 print(f'line: {i}: {d}')
-            numbers.append(float(d['amount']))
+            d['amount'] = float(d['amount'])
+            items.append(d)
 
-    if numbers:
-        print(f'Sum:  {sum(numbers)}')
-        print(f'Mean: {statistics.mean(numbers)}')
-        print(f'Min:  {min(numbers)}')
-        print(f'Max:  {max(numbers)}')
+    if items:
+        print(f'Num Items: {len(items)}')
+
+        total = sum(i['amount'] for i in items)
+        print(f'Sum:  {total}')
+
+        mean = statistics.mean(i['amount'] for i in items)
+        print(f'Mean: {mean}')
+
+        minimum = min(items, key=itemgetter('amount'))
+        print(f'Min:  {minimum}')
+
+        maximum = max(items, key=itemgetter('amount'))
+        print(f'Max:  {maximum}')
     else:
         print(f'No number lines found')
 
