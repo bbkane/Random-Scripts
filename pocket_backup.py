@@ -5,7 +5,6 @@ __author__ = "Benjamin Kane"
 __version__ = "0.1.0"
 
 import textwrap
-import json
 import os
 import requests
 
@@ -48,17 +47,17 @@ def main():
     base_url = 'https://getpocket.com'
 
     base_headers = {
-        'Content-Type' : 'application/json; charset=UTF-8',
+        'Content-Type': 'application/json; charset=UTF-8',
         'X-Accept': 'application/json',
     }
 
     res = requests.post(
         f'{base_url}/v3/oauth/request',
         headers=base_headers,
-        data = json.dumps({
+        json={
             'consumer_key': consumer_key,
             'redirect_uri': redirect_uri,
-        })
+        }
     )
 
     print(format_prepared_request(res.request))
