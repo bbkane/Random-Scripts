@@ -110,13 +110,30 @@ def log_on_error(resp, *args, **kwargs):
         raise
 
 
+class TimedHTTTPAdapter(requests.adapters.HTTPAdapter):
+    """Set timeouts for all HTTP calls
+
+    https://github.com/requests/requests/issues/3341#issuecomment-226764983'
+    """
+
+    def __init__(self, timeout=None, *args, **kwargs):
+        self.timeout = timeout
+        super().__init__(*args, **kwargs)
+
+    def send(self, *args, **kwargs):
+        kwargs['timeout'] = self.timeout
+        return super().send(*args, **kwargs)
+
+
 def main():
     consumer_key = os.environ['KEY_pocket_backup_consumer_key']
     redirect_uri = 'pocket_backup:authorizationFinished'
     base_url = 'https://getpocket.com'
 
     session = requests.Session()
-    session.timeout = 30
+    timed_adaptor = TimedHTTTPAdapter(30)
+    session.mount('http://', timed_adaptor)
+    session.mount('https://', timed_adaptor)
     session.hooks['response'].append(log_on_error)
     session.headers.update({
         'Content-Type': 'application/json; charset=UTF-8',
@@ -126,7 +143,7 @@ def main():
     with session:
         res = session.post(
             f'{base_url}/v3/oauth/request',
-            data={
+            json={
                 'consumer_key': consumer_key,
                 'redirect_uri': redirect_uri,
             }
@@ -134,7 +151,7 @@ def main():
         # https://getpocket.com/developer/docs/authentication
         # https://medium.com/@alexdambra/getting-your-reading-history-out-of-pocket-using-python-b4253dbe865c
 
-    print(res.json())
+    print(format_response(res))
 
 
 if __name__ == "__main__":
