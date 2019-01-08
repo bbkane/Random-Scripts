@@ -4,8 +4,11 @@
 __author__ = "Benjamin Kane"
 __version__ = "0.1.0"
 
-import textwrap
+import functools
+import json
 import os
+import textwrap
+
 import requests
 
 # I want to be able to export my pocket stuff (at least my links and tags)
@@ -15,8 +18,12 @@ import requests
 
 # 2019-01-05: Postponing pocket work while I work on WiSRE and machine learning course
 
+
+format_json = functools.partial(json.dumps, indent=2, sort_keys=True)
+
+
 def format_prepared_request(req):
-    """Pretty-format 'requests.models.PreparedRequest'
+    """Pretty-format 'requests.PreparedRequest'
 
     Example:
         res = requests.post(...)
@@ -27,7 +34,14 @@ def format_prepared_request(req):
         print(format_prepared_request(res.request))
     """
     headers = '\n'.join(f'{k}: {v}' for k, v in req.headers.items())
+    content_type = req.headers.get('Content-Type', '')
+    if 'application/json' in content_type:
+        body = format_json(json.loads(req.body))
+    else:
+        body = req.text
     s = textwrap.dedent("""
+    REQUEST
+    =======
     {method} {url}
     {headers}
     {body}
@@ -36,9 +50,35 @@ def format_prepared_request(req):
         method=req.method,
         url=req.url,
         headers=headers,
-        body=req.body,
+        body=body,
     )
     return s
+
+
+def format_response(resp):
+    """Pretty-format 'requests.Response'"""
+    headers = '\n'.join(f'{k}: {v}' for k, v in resp.headers.items())
+    content_type = resp.headers.get('Content-Type', '')
+    if 'application/json' in content_type:
+        body = format_json(resp.json())
+    else:
+        body = resp.text
+    s = textwrap.dedent("""
+    RESPONSE
+    ========
+    {status_code}
+    {headers}
+    {body}
+    """).strip()
+
+    s = s.format(
+        status_code=resp.status_code,
+        headers=headers,
+        body=body,
+    )
+
+    return s
+
 
 
 def main():
@@ -61,8 +101,9 @@ def main():
     )
 
     print(format_prepared_request(res.request))
+    print(format_response(res))
 
-    print(res.json())
+    # print(res.json())
 
 
 if __name__ == "__main__":
