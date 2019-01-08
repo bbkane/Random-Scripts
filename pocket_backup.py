@@ -76,9 +76,7 @@ def format_response(resp):
         headers=headers,
         body=body,
     )
-
     return s
-
 
 
 def main():
@@ -86,19 +84,21 @@ def main():
     redirect_uri = 'pocket_backup:authorizationFinished'
     base_url = 'https://getpocket.com'
 
-    base_headers = {
+    session = requests.Session()
+    session.timeout = 30
+    session.headers.update({
         'Content-Type': 'application/json; charset=UTF-8',
         'X-Accept': 'application/json',
-    }
+    })
 
-    res = requests.post(
-        f'{base_url}/v3/oauth/request',
-        headers=base_headers,
-        json={
-            'consumer_key': consumer_key,
-            'redirect_uri': redirect_uri,
-        }
-    )
+    with session:
+        res = session.post(
+            f'{base_url}/v3/oauth/request',
+            json={
+                'consumer_key': consumer_key,
+                'redirect_uri': redirect_uri,
+            }
+        )
 
     print(format_prepared_request(res.request))
     print(format_response(res))
