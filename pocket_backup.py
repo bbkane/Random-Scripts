@@ -5,11 +5,14 @@ __author__ = "Benjamin Kane"
 __version__ = "0.1.0"
 
 import functools
+import logging
 import json
 import os
 import textwrap
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 # I want to be able to export my pocket stuff (at least my links and tags)
 
@@ -20,6 +23,7 @@ import requests
 
 
 format_json = functools.partial(json.dumps, indent=2, sort_keys=True)
+indent = functools.partial(textwrap.indent, prefix='  ')
 
 
 def format_prepared_request(req):
@@ -36,9 +40,12 @@ def format_prepared_request(req):
     headers = '\n'.join(f'{k}: {v}' for k, v in req.headers.items())
     content_type = req.headers.get('Content-Type', '')
     if 'application/json' in content_type:
-        body = format_json(json.loads(req.body))
+        try:
+            body = format_json(json.loads(req.body))
+        except json.JSONDecodeError:
+            body = req.body
     else:
-        body = req.text
+        body = req.body
     s = textwrap.dedent("""
     REQUEST
     =======
@@ -60,7 +67,10 @@ def format_response(resp):
     headers = '\n'.join(f'{k}: {v}' for k, v in resp.headers.items())
     content_type = resp.headers.get('Content-Type', '')
     if 'application/json' in content_type:
-        body = format_json(resp.json())
+        try:
+            body = format_json(resp.json())
+        except json.JSONDecodeError:
+            body = resp.text
     else:
         body = resp.text
     s = textwrap.dedent("""
@@ -79,6 +89,21 @@ def format_response(resp):
     return s
 
 
+def log_on_error(resp, *args, **kwargs):
+    """Log errors for a request
+
+    This is intended to be used as a requests.Session event hook
+    """
+    # Get the current logger
+    logger = logging.getLogger(__name__)
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError:
+        logger.error(f'failing request: {format_prepared_request(resp.request)}')
+        logger.error(f'failing response: {format_response(resp)}')
+        raise
+
+
 def main():
     consumer_key = os.environ['KEY_pocket_backup_consumer_key']
     redirect_uri = 'pocket_backup:authorizationFinished'
@@ -86,6 +111,7 @@ def main():
 
     session = requests.Session()
     session.timeout = 30
+    session.hooks['response'].append(log_on_error)
     session.headers.update({
         'Content-Type': 'application/json; charset=UTF-8',
         'X-Accept': 'application/json',
@@ -99,11 +125,10 @@ def main():
                 'redirect_uri': redirect_uri,
             }
         )
+        # https://getpocket.com/developer/docs/authentication
+        # https://medium.com/@alexdambra/getting-your-reading-history-out-of-pocket-using-python-b4253dbe865c
 
-    print(format_prepared_request(res.request))
-    print(format_response(res))
-
-    # print(res.json())
+    print(res.json())
 
 
 if __name__ == "__main__":
