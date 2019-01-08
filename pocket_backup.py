@@ -49,15 +49,18 @@ def format_prepared_request(req):
     s = textwrap.dedent("""
     REQUEST
     =======
-    {method} {url}
+    endpoint: {method} {url}
+    headers:
     {headers}
+    body:
     {body}
+    =======
     """).strip()
     s = s.format(
         method=req.method,
         url=req.url,
-        headers=headers,
-        body=body,
+        headers=indent(headers),
+        body=indent(body),
     )
     return s
 
@@ -76,15 +79,18 @@ def format_response(resp):
     s = textwrap.dedent("""
     RESPONSE
     ========
-    {status_code}
+    status_code: {status_code}
+    headers:
     {headers}
+    body:
     {body}
+    ========
     """).strip()
 
     s = s.format(
         status_code=resp.status_code,
-        headers=headers,
-        body=body,
+        headers=indent(headers),
+        body=indent(body),
     )
     return s
 
@@ -120,7 +126,7 @@ def main():
     with session:
         res = session.post(
             f'{base_url}/v3/oauth/request',
-            json={
+            data={
                 'consumer_key': consumer_key,
                 'redirect_uri': redirect_uri,
             }
