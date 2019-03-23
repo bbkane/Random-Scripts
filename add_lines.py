@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from operator import itemgetter
+from operator import attrgetter
 from textwrap import dedent
 import argparse
+import collections
 import re
 import statistics
 import sys
@@ -29,6 +30,8 @@ Examples BASH usage:
 
     cat <<EOF | {sys.argv[0]}
     ;; Points Ben 1
+    ;; Points Jenny 2
+    ;; Budget Ben 10
     EOF
 
 Please see Benjamin Kane for help.
@@ -148,26 +151,35 @@ def main():
         test_match_lines(args.marker)
         return
 
+    # TODO: just use categorized_items from the beginning
     items = []
     for i, line in enumerate(args.infile):
         match = match_line(line, args.marker)
         if match:
             items.append(Item.from_regex_match(match, i))
 
+
+    categorized_items = collections.defaultdict(list)
+    for item in items:
+        categorized_items[item.category].append(item)
+
     if items:
-        print(f'Num Items: {len(items)}')
+        for category, items in sorted(categorized_items.items(), key = lambda i: i[0]):
 
-        total = sum(i['amount'] for i in items)
-        print(f'Sum:  {total}')
+            print(f'Category: {category}')
+            print(f'    Num Items: {len(items)}')
 
-        mean = statistics.mean(i['amount'] for i in items)
-        print(f'Mean: {mean}')
+            total = sum(i.amount for i in items)
+            print(f'    Sum:  {total}')
 
-        minimum = min(items, key=itemgetter('amount'))
-        print(f'Min:  {minimum}')
+            mean = statistics.mean(i.amount for i in items)
+            print(f'    Mean: {mean}')
 
-        maximum = max(items, key=itemgetter('amount'))
-        print(f'Max:  {maximum}')
+            minimum = min(items, key=attrgetter('amount'))
+            print(f'    Min:  {minimum}')
+
+            maximum = max(items, key=attrgetter('amount'))
+            print(f'    Max:  {maximum}')
     else:
         print(f'No number lines found')
 
