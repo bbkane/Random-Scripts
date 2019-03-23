@@ -7,6 +7,7 @@ import argparse
 import re
 import statistics
 import sys
+import typing
 
 __author__ = "Benjamin Kane"
 __version__ = "0.1.0"
@@ -14,11 +15,11 @@ __doc__ = f"""
 This script parses a text file to gather simple stats on lines. It's useful
 for interspersing budget itmes in notes.
 
-Count lines like: <marker> <name> <separator> <amount>  # optional comment
-By default <marker> is ;; and <separator> is ,
+Count lines like: <marker> <category> <name> <amount>  # optional comment
+By default <marker> is ;;
 
 Example line:
-    ;; BankAccount , 9999999999  # got dat money
+    ;; Budget BankAccount 9999999999  # got dat money
 
 
 Examples BASH usage:
@@ -27,7 +28,7 @@ Examples BASH usage:
     {sys.argv[0]} < text.txt
 
     cat <<EOF | {sys.argv[0]}
-    ;; Ben , 1
+    ;; Points Ben 1
     EOF
 
 Please see Benjamin Kane for help.
@@ -57,12 +58,6 @@ def parse_args(*args, **kwargs):
         help='Marker at front of line to mark line to count. Defaults to ;;'
     )
     parser.add_argument(
-        '--separator',
-        '-s',
-        default=',',
-        help='Separator between name and amount. Defaults to ,'
-    )
-    parser.add_argument(
         '--verbose',
         '-v',
         action='store_true',
@@ -78,13 +73,14 @@ def parse_args(*args, **kwargs):
     return parser.parse_args(*args, **kwargs)
 
 
-def match_line(line, marker, sep):
+def match_line(line, marker):
     pattern = re.compile(
-        f"^{marker}" + r"""\s+
+        f"^{marker}" + r"""
+        \s+
+        (?P<category>\w+)
+        \s+
         (?P<name>\w+)
-        \s*
-        """ + re.escape(sep) + r"""
-        \s*
+        \s+
         (?P<amount>
             [+-]?             # optional signe
             [0-9]+            # some digits
@@ -104,41 +100,59 @@ def match_line(line, marker, sep):
     return None
 
 
-def test_match_lines(marker, separator):
+def test_match_lines(marker):
     """Poor man's in-file pytest"""
     lines = dedent("""
-    ;; A , 1
-    ;; B , 1.1
-    ;; C,1
-    ;; D, 1
-    ;; E ,1
-    ;; F ,-1
-    ;; t , 10 # bob
+    ;; CA   A 1
+    ;; CB B 1.1
+    ;; CC C 1
+    ;; CD D  1
+    ;; CE E   1
+    ;; CF F -1
+    ;; Ct t     10 # bob
     """).strip()
 
     for i, line in enumerate(lines.split('\n')):
         line += '\n'
         print(f'{i}: Testing: {repr(line)}')
-        d = match_line(line, marker, separator)
-        print(f'{i}: Result: {repr(d)}')
+        match = match_line(line, marker)
+        print(f'{i}: Match: {repr(match)}')
+        item = Item.from_regex_match(match, i)
+        print(f'{i}: Result: {repr(item)}')
         print()
+
+
+class Item(typing.NamedTuple):
+    line_number: int
+    category: str
+    name: str
+    amount: float
+    comment: typing.Optional[str]
+
+    @classmethod
+    def from_regex_match(cls, match, line_number):
+        i = cls(
+            line_number=line_number,
+            category=match['category'],
+            name=match['name'],
+            amount=float(match['amount']),
+            comment=match['comment'],
+        )
+        return i
 
 
 def main():
     args = parse_args()
 
     if args.testing:
-        test_match_lines(args.marker, args.separator)
+        test_match_lines(args.marker)
         return
 
     items = []
     for i, line in enumerate(args.infile):
-        d = match_line(line, args.marker, args.separator)
-        if d:
-            if args.verbose:
-                print(f'line: {i}: {d}')
-            d['amount'] = float(d['amount'])
-            items.append(d)
+        match = match_line(line, args.marker)
+        if match:
+            items.append(Item.from_regex_match(match, i))
 
     if items:
         print(f'Num Items: {len(items)}')
