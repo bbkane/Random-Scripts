@@ -24,15 +24,16 @@ Example line:
 
 
 Examples BASH usage:
-    {sys.argv[0]} text.txt
 
-    {sys.argv[0]} < text.txt
+{sys.argv[0]} text.txt
 
-    cat <<EOF | {sys.argv[0]}
-    ;; Points Ben 1
-    ;; Points Jenny 2
-    ;; Budget Ben 10
-    EOF
+{sys.argv[0]} < text.txt
+
+cat <<EOF | {sys.argv[0]}
+;; Points Ben 1
+;; Points Jenny 2
+;; Budget Ben 10
+EOF
 
 Please see Benjamin Kane for help.
 Code at https://github.com/bbkane/Random-Scripts/tree/master
